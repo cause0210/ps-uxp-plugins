@@ -1,5 +1,10 @@
 # Photoshop UXP 本地修图插件
 
+> **只想下载使用？** 看 [安装说明.md](安装说明.md) —— 里面有下载地址（含国内镜像）和逐步安装指南。
+>
+> 上不了 GitHub 的话，用这个镜像直链：
+> `https://gh-proxy.com/https://github.com/cause0210/ps-uxp-plugins/archive/refs/heads/main.zip`
+
 两个**完全本地运行**的 Photoshop UXP 面板插件，不需要登录 Adobe 账号，
 把文件夹放进 `Plug-ins` 目录即可使用。
 
