@@ -1,0 +1,29 @@
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.log
+~$*
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*~
+
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 构建产物
+*.zip
+dist/
+build/
+
+# 开发调试残留
+diag.html
+diag.js
+*.probe
+probe-*
+*-probe*.txt

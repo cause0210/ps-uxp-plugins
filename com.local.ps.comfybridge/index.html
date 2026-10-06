@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>ComfyUI 桥接</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+
+    <!-- ============ 标题 ============ -->
+    <header class="head">
+      <div class="title">ComfyUI 桥接</div>
+      <div class="sub">本机 AI 修图 · 不联网 · 结果置入新图层</div>
+    </header>
+
+    <!-- ============ 状态 ============ -->
+    <section class="card">
+      <div class="status" id="status">就绪</div>
+      <div class="docinfo" id="docInfo">读取中…</div>
+      <button class="btn ghost block" id="btnTest">测试连接</button>
+    </section>
+
+    <!-- ============ 功能 1 ============ -->
+    <section class="card">
+      <div class="card-title"><span class="idx">AI</span>去除背景</div>
+      <p class="desc">
+        用 BiRefNet 模型自动抠出主体，结果作为<b>带透明通道的新图层</b>置入。
+        原图层不受影响。
+      </p>
+      <div class="field">
+        <label for="bgEdge">边缘处理</label>
+        <select id="bgEdge" class="input">
+          <option value="none">标准（边缘锐利）</option>
+          <option value="soft">柔和（收缩+羽化）</option>
+        </select>
+        <div class="tip" id="bgEdgeHint"></div>
+      </div>
+      <button class="btn primary block" id="btnRemoveBg">AI 去背景</button>
+    </section>
+
+
+
+    <!-- ============ 功能 2 ============ -->
+    <section class="card">
+      <div class="card-title"><span class="idx">AI</span>放大超分</div>
+      <p class="desc">
+        用 RealESRGAN 让细节更锐利（AI 补出真实纹理，而不是拉伸像素）。
+      </p>
+
+      <div class="field">
+        <label for="upsMode">处理方式</label>
+        <select id="upsMode" class="input">
+          <option value="region">只输出放大的选区（推荐）</option>
+          <option value="enhance">增强选区后贴回原位</option>
+          <option value="full">放大整张图</option>
+        </select>
+        <div class="tip" id="upsModeHint"></div>
+      </div>
+
+      <div class="field">
+        <label for="upsFactor">放大倍数</label>
+        <select id="upsFactor" class="input">
+          <option value="2">2 倍</option>
+          <option value="3">3 倍</option>
+          <option value="4">4 倍</option>
+        </select>
+      </div>
+
+      <button class="btn primary block" id="btnUpscale">AI 放大超分</button>
+    </section>
+
+    <!-- ============ 设置 ============ -->
+    <section class="card">
+      <div class="field">
+        <label for="inpServer">ComfyUI 地址</label>
+        <input type="text" id="inpServer" class="input"
+               placeholder="http://localhost:8188" />
+        <div class="tip">本机 ComfyUI 默认端口 8188。必须用 localhost，不能写 127.0.0.1。</div>
+      </div>
+
+      <div class="field">
+        <label for="inpWorkDir">临时工作目录（一般留空）</label>
+        <input type="text" id="inpWorkDir" class="input"
+               placeholder="留空 = 自动使用系统临时目录" />
+        <div class="tip">
+          插件在这里中转图片，<b>与 ComfyUI 的安装位置无关</b>。<br>
+          留空即可；只有自动选择失败时才需要填一个可写目录。
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 日志 ============ -->
+    <section class="card">
+      <div class="card-title row">
+        <span>运行日志</span>
+        <span class="spacer"></span>
+        <button class="btn mini" id="btnToggleLog">折叠</button>
+        <button class="btn mini" id="btnClear">清空</button>
+      </div>
+      <div class="log" id="log"></div>
+      <div class="tip" id="logHint">日志可折叠 —— 折叠后能更快看到上面的功能按钮</div>
+    </section>
+
+    <footer class="foot">
+      <button class="btn mini" id="btnTop">↑ 回到顶部</button>
+      <span class="spacer"></span>
+      <button class="btn mini" id="btnRefresh">刷新文档状态</button>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+  </div>
+
+  <script src="js/maskpng.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

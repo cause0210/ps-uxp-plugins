@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>本地修图工具箱</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<!--
+  面板根节点：data-lang 由 i18n 模块动态写入（zh_CN / en_US）。
+  CSS 中所有尺寸均使用相对单位，保证面板缩放时布局稳定。
+-->
+<body>
+  <div id="app" class="app" data-lang="zh_CN">
+
+    <!-- ===================== 标题区 ===================== -->
+    <header class="app-head">
+      <div class="app-title" data-i18n="app.title">本地修图工具箱</div>
+      <div class="app-sub" data-i18n="app.subtitle">100% 本地处理 · 不压缩分辨率</div>
+    </header>
+
+    <!-- ===================== 文档状态条 ===================== -->
+    <section class="card doc-card">
+      <div class="doc-row">
+        <span class="dot" id="docDot"></span>
+        <span class="doc-name" id="docName" data-i18n="status.noDocument">当前没有打开文档</span>
+      </div>
+      <div class="doc-meta">
+        <span class="meta-item">
+          <span class="meta-key" data-i18n="status.size">尺寸</span>
+          <span class="meta-val" id="docSize">--</span>
+        </span>
+        <span class="meta-item">
+          <span class="meta-key" data-i18n="status.resolution">分辨率</span>
+          <span class="meta-val" id="docDpi">--</span>
+        </span>
+        <span class="meta-item">
+          <span class="meta-key" data-i18n="status.selection">选区</span>
+          <span class="meta-val" id="docSelection" data-i18n="status.noSelection">无</span>
+        </span>
+      </div>
+      <button class="btn btn-ghost btn-block" id="btnRefresh" data-i18n="btn.refresh">刷新状态</button>
+    </section>
+
+    <!-- ===================== 功能一：清除杂物 / 路人 ===================== -->
+    <section class="card">
+      <div class="card-title">
+        <span class="idx">1</span>
+        <span data-i18n="remove.title">清除杂物 / 路人</span>
+      </div>
+      <p class="card-desc" data-i18n="remove.desc">
+        读取 PS 原生选区，调用本地“内容识别填充 / 移除工具”算法，自动取样周围像素完成修复并直接写入原图层。
+      </p>
+      <button class="btn btn-primary btn-block" id="btnRemove" data-i18n="remove.btn">
+        清除杂物 / 路人
+      </button>
+      <button class="btn btn-ghost btn-block" id="btnHeal" data-i18n="remove.btn2">
+        用修复画笔再补一刀（可选）
+      </button>
+      <p class="hint" data-i18n="remove.hint">
+        选区要稍微多框住物体外沿 2~5 像素，内容识别填充的效果最好。
+      </p>
+    </section>
+
+    <!-- ===================== 功能二：衣物褶皱抚平 ===================== -->
+    <section class="card">
+      <div class="card-title">
+        <span class="idx">2</span>
+        <span data-i18n="smooth.title">衣物褶皱抚平</span>
+      </div>
+      <p class="card-desc" data-i18n="smooth.desc">
+        表面模糊只抹平低频明暗起伏（褶皱），保留高频布料纹理；再把模糊结果与原始信息按强度混合，避免糊化。全程以选区做蒙版，不产生生硬边界。
+      </p>
+
+      <!-- 模糊半径 -->
+      <div class="field" data-field="radius">
+        <div class="field-head">
+          <label for="inpRadius" data-i18n="smooth.radius">模糊半径（px）</label>
+          <output class="field-val" id="outRadius">8</output>
+        </div>
+        <input type="range" id="inpRadius" min="1" max="50" step="1" value="8" />
+        <div class="field-tip" data-i18n="smooth.radiusTip">
+          褶皱宽度大约是多少像素就填多少；分辨率越高数值越大。
+        </div>
+      </div>
+
+      <!-- 边缘阈值 -->
+      <div class="field" data-field="threshold">
+        <div class="field-head">
+          <label for="inpThreshold" data-i18n="smooth.threshold">边缘阈值（保纹理）</label>
+          <output class="field-val" id="outThreshold">16</output>
+        </div>
+        <input type="range" id="inpThreshold" min="2" max="60" step="1" value="16" />
+        <div class="field-tip" data-i18n="smooth.thresholdTip">
+          阈值越小越保留纹理、越不糊；想更强力可以降到 6~10。
+        </div>
+      </div>
+
+      <!-- 混合强度 -->
+      <div class="field" data-field="strength">
+        <div class="field-head">
+          <label for="inpStrength" data-i18n="smooth.strength">修复强度（%）</label>
+          <output class="field-val" id="outStrength">70</output>
+        </div>
+        <input type="range" id="inpStrength" min="10" max="100" step="5" value="70" />
+        <div class="field-tip" data-i18n="smooth.strengthTip">
+          100% 等于完全使用模糊结果；60%~80% 通常既平褶皱又留纹理。
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="btnSmooth" data-i18n="smooth.btn">
+        抚平衣物褶皱
+      </button>
+
+      <details class="details">
+        <summary data-i18n="smooth.advanced">高级：模糊算法与边缘羽化</summary>
+        <div class="details-body">
+          <div class="field">
+            <div class="field-head">
+              <label for="selFilter" data-i18n="smooth.filter">模糊算法</label>
+            </div>
+            <select id="selFilter">
+              <option value="surfaceBlur" data-i18n="smooth.filter.surface">表面模糊（推荐）</option>
+              <option value="smartBlur" data-i18n="smooth.filter.smart">特殊模糊</option>
+              <option value="median" data-i18n="smooth.filter.median">蒙尘与划痕 / 中值</option>
+            </select>
+            <div class="field-tip" data-i18n="smooth.filterTip">
+              中值对细小布料纹理保护最好，但速度较慢。
+            </div>
+          </div>
+          <div class="field">
+            <div class="field-head">
+              <label for="inpFeather" data-i18n="smooth.feather">选区羽化（px）</label>
+              <output class="field-val" id="outFeather">0</output>
+            </div>
+            <input type="range" id="inpFeather" min="0" max="30" step="1" value="0" />
+            <div class="field-tip" data-i18n="smooth.featherTip">
+              大于 0 时会在选区边缘做渐变过渡，避免修复痕迹出现硬边。
+            </div>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- ===================== 运行日志 ===================== -->
+    <section class="card">
+      <div class="card-title card-title-row">
+        <span data-i18n="log.title">运行日志</span>
+        <button class="btn btn-mini" id="btnClearLog" data-i18n="log.clear">清空</button>
+      </div>
+      <div class="log" id="log" role="log" aria-live="polite"></div>
+    </section>
+
+    <!-- ===================== 底部 ===================== -->
+    <footer class="app-foot">
+      <label class="switch">
+        <input type="checkbox" id="chkKeepSettings" />
+        <span data-i18n="opt.keep">记住参数</span>
+      </label>
+      <select id="selLang" class="lang-select" title="Language / 语言">
+        <option value="zh_CN">中文</option>
+        <option value="en_US">English</option>
+      </select>
+    </footer>
+
+    <!-- 轻提示浮层（不依赖 alert，避免模态阻塞 PS） -->
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

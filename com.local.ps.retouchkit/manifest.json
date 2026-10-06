@@ -1,0 +1,51 @@
+{
+  "manifestVersion": 5,
+  "id": "com.local.ps.retouchkit",
+  "name": "本地修图工具箱",
+  "version": "1.2.0",
+  "main": "index.html",
+  "host": {
+    "app": "PS",
+    "minVersion": "23.0.0",
+    "data": {
+      "apiVersion": 2,
+      "loadEvent": "use"
+    }
+  },
+  "entrypoints": [
+    {
+      "type": "panel",
+      "id": "localRetouchPanel",
+      "label": {
+        "default": "本地修图工具箱"
+      },
+      "minimumSize": { "width": 260, "height": 320 },
+      "maximumSize": { "width": 1000, "height": 1600 },
+      "preferredDockedSize": { "width": 320, "height": 560 },
+      "preferredFloatingSize": { "width": 340, "height": 620 },
+      "icons": [
+        {
+          "width": 23,
+          "height": 23,
+          "path": "icons/plugin.png",
+          "scale": [1, 2],
+          "theme": ["dark", "darkest", "medium", "light", "lightest", "all"]
+        }
+      ]
+    }
+  ],
+  "icons": [
+    {
+      "width": 48,
+      "height": 48,
+      "path": "icons/plugin.png",
+      "scale": [1, 2],
+      "theme": ["dark", "darkest", "medium", "light", "lightest", "all"],
+      "species": ["pluginList"]
+    }
+  ],
+  "requiredPermissions": {
+    "localFileSystem": "fullAccess",
+    "allowCodeGenerationFromStrings": true
+  }
+}

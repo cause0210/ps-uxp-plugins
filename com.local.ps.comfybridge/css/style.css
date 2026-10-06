@@ -1,0 +1,438 @@
+/* =============================================================================
+   ComfyUI 桥接插件 · 样式
+   配色尽量跟随 PS 主题（UXP 会注入 --uxp-host-* 变量）
+   ============================================================================= */
+
+:root {
+  --bg: var(--uxp-host-background-color, #232323);
+  --panel: var(--uxp-host-widget-background-color, #2e2e2e);
+  --panel2: #363636;
+  --border: var(--uxp-host-border-color, #3f3f3f);
+  --text: var(--uxp-host-text-color, #e6e6e6);
+  --dim: #a3a3a3;
+  --accent: #2d8ceb;
+  --accent-h: #4aa0f5;
+  --ok: #43b581;
+  --warn: #e8a33d;
+  --err: #e05c5c;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: var(--uxp-host-background-color, #f0f0f0);
+    --panel: var(--uxp-host-widget-background-color, #fafafa);
+    --panel2: #ffffff;
+    --border: var(--uxp-host-border-color, #d0d0d0);
+    --text: var(--uxp-host-text-color, #1f1f1f);
+    --dim: #6a6a6a;
+  }
+}
+
+* { box-sizing: border-box; }
+
+/* ============================================================================
+ * 滚动布局（UXP 专用写法）
+ *
+ * 【为什么之前 height:100% 不管用】
+ *   UXP 面板里 html/body 的**百分比高度链解析不可靠** ——
+ *   height:100% 往往算不出真实面板高度，于是滚动容器没有确定高度，
+ *   overflow-y:auto 就永远不触发，内容超出后被直接裁掉。
+ *
+ * 【这里用的办法】
+ *   ① html/body 用**视口单位 100vh**（UXP 支持，且是面板实际高度）
+ *   ② 滚动容器用**绝对定位四边贴齐**（top/left/right/bottom:0），
+ *      不依赖任何百分比高度 —— 这是 UXP 里最稳的做法
+ *   ③ body 不设 overflow:hidden，万一 .app 失效还有兜底
+ *
+ * 注意：绝对定位的元素会脱离文档流，但这没问题 —— .app 本来就是唯一的子元素。
+ * ========================================================================== */
+html {
+  height: 100%;
+  height: 100vh;                /* 100vh 更可靠；不支持时退回 100% */
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  height: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  position: relative;           /* 给 .app 提供定位参照 */
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.app {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;   /* 四边贴齐 = 拿到确定高度 */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 8px 24px;        /* 底部多留，滚到底不贴边 */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain; /* 防止滚动穿透到外层 */
+  min-width: 0;
+}
+
+/* ---------------------------------------------------------------------------
+ * 【关键】禁止直接子元素被压缩
+ *
+ * .app 是 flex 列布局。flex 子项的 flex-shrink 默认为 1，
+ * 意思是"容器高度不够时把子项压扁"。
+ * 结果就是：内容超出时不是溢出产生滚动，而是所有卡片被压扁、
+ * 文字挤在一起（这正是"一缩小就挤成一团"的根因）。
+ *
+ * 设为 flex:none（即 flex-shrink:0）后，子项保持自身高度，
+ * 总高度超出 .app → 触发 overflow-y:auto 的滚动。
+ * ------------------------------------------------------------------------- */
+.app > * { flex: none; }
+
+/* 滚动条（UXP 基于 Chromium，-webkit- 前缀有效） */
+.app::-webkit-scrollbar { width: 10px; }
+.app::-webkit-scrollbar-track { background: transparent; }
+.app::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, .45);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.app::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, .72);
+  background-clip: content-box;
+}
+
+/* ---------- 标题 ---------- */
+.head { padding: 2px 2px 0; min-width: 0; }
+.title { font-size: 14px; font-weight: 600; }
+.sub { font-size: 10px; color: var(--dim); margin-top: 1px; }
+
+/* ---------- 卡片 ---------- */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;                 /* 关键：允许卡片在窄面板里收缩，否则会撑出横向滚动 */
+}
+
+/* 卡片标题行：窄的时候允许换行，而不是把文字压扁 */
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  flex-wrap: wrap;
+  min-width: 0;
+  row-gap: 4px;
+}
+.card-title > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.card-title.row { justify-content: space-between; }
+.spacer { flex: 1 1 auto; min-width: 0; }
+
+.idx {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: none;                   /* 徽标不允许被压扁 */
+  min-width: 20px; height: 16px; padding: 0 4px;
+  border-radius: 3px; background: var(--accent); color: #fff;
+  font-size: 9px; font-weight: 700;
+}
+
+.desc {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--dim);
+  line-height: 1.5;
+  overflow-wrap: anywhere;      /* 长英文/路径能断行，不会撑破卡片 */
+  min-width: 0;
+}
+
+/* ---------- 状态条 ---------- */
+.status {
+  padding: 6px 8px;
+  border-radius: 4px;
+  background: var(--panel2);
+  border-left: 3px solid var(--border);
+  font-weight: 600;
+  font-size: 11.5px;
+}
+.status.working { border-left-color: var(--accent); color: var(--accent); }
+.status.done    { border-left-color: var(--ok);     color: var(--ok); }
+.status.failed  { border-left-color: var(--err);    color: var(--err); }
+
+.docinfo {
+  font-size: 10.5px;
+  color: var(--dim);
+  padding: 4px 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.docinfo .yes { color: var(--ok); font-weight: 600; }
+.docinfo .no  { color: var(--warn); font-weight: 600; }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+}
+.btn:hover:not(:disabled) { background: #454545; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.block { display: block; width: 100%; }
+
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  padding: 9px 10px;
+  font-size: 12.5px;
+}
+.btn.primary:hover:not(:disabled) { background: var(--accent-h); border-color: var(--accent-h); }
+
+.btn.ghost { background: transparent; }
+.btn.mini { padding: 3px 8px; font-size: 10px; border-radius: 3px; }
+
+/* ---------- 表单 ---------- */
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field label {
+  font-size: 11px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;                  /* 关键：input/select 在窄面板里能收缩 */
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 7px;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 11px;
+}
+.input:focus { outline: none; border-color: var(--accent); }
+
+textarea.input {
+  resize: vertical;
+  min-height: 46px;
+  line-height: 1.45;
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+code {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 3px;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 10px;
+  overflow-wrap: anywhere;
+}
+
+select.input {
+  cursor: pointer;
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  /* 长选项名不要撑破卡片 */
+  text-overflow: ellipsis;
+}
+
+.preview {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ok);
+  border-radius: 4px;
+  padding: 5px 7px;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--ok);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-height: 76px;
+  overflow-y: auto;
+  min-width: 0;
+}
+.preview.empty { border-left-color: var(--warn); color: var(--warn); }
+
+.tip {
+  font-size: 9.5px;
+  color: var(--dim);
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+/* 有新日志但用户正在往上翻阅时的提示（可点击跳到底部） */
+.tip.hint-new {
+  color: var(--accent);
+  font-weight: 600;
+}
+.tip.hint-new::before { content: ''; }
+
+/* ---------- 日志 ---------- */
+.log {
+  max-height: 200px;
+  min-height: 80px;
+  overflow-y: auto;
+  background: #1b1b1b;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+/* 折叠状态：整个日志区收起，腾出空间给上面的按钮 */
+.log.collapsed { display: none; }
+
+/* 日志自身的滚动条也细一点，跟外层区分开 */
+.log::-webkit-scrollbar { width: 7px; }
+.log::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, .5);
+  border-radius: 4px;
+}
+
+@media (prefers-color-scheme: light) { .log { background: #f7f7f7; } }
+
+.log-line {
+  display: flex;
+  gap: 5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  min-width: 0;
+}
+.log-time { color: #767676; flex: none; }
+.log-msg { flex: 1 1 auto; min-width: 0; }   /* min-width:0 才能正常换行 */
+.log-line.info  .log-msg { color: #cfcfcf; }
+.log-line.ok    .log-msg { color: var(--ok); }
+.log-line.warn  .log-msg { color: var(--warn); }
+.log-line.error .log-msg { color: var(--err); }
+
+@media (prefers-color-scheme: light) {
+  .log-line.info .log-msg { color: #333; }
+}
+
+/* ---------- 页脚 ---------- */
+.foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0 6px;
+  flex-wrap: wrap;               /* 窄的时候按钮换行，不互相挤压 */
+  row-gap: 5px;
+}
+.foot .btn { flex: 0 0 auto; }
+
+/* ---------- 轻提示 ---------- */
+.toast {
+  position: fixed;
+  left: 50%; bottom: 14px;
+  transform: translate(-50%, 20px);
+  max-width: 88%;
+  padding: 8px 12px;
+  border-radius: 5px;
+  background: rgba(20, 20, 20, .96);
+  border: 1px solid var(--border);
+  color: #fff;
+  font-size: 11px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s, transform .18s;
+  z-index: 99;
+  overflow-wrap: anywhere;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.ok { border-color: var(--ok); }
+.toast.error { border-color: var(--err); }
+.toast.warn { border-color: var(--warn); }
+
+/* 兜底：没被上面规则覆盖的滚动条（例如日志内部）用细一点的样式 */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, .45);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(128, 128, 128, .7); }
+
+
+/* ============================================================================
+ * 窄面板适配
+ *
+ * 问题：面板拖窄后，行内排布的元素（标题+按钮、标签、页脚按钮）会互相挤压，
+ *       文字挤成一团或溢出。
+ * 办法：
+ *   ① 所有 flex 子项加 min-width:0 —— 默认 min-width:auto 不允许收缩，
+ *      这是"挤在一起"最常见的根因
+ *   ② 长文本用 overflow-wrap:anywhere 允许在任意位置断行
+ *   ③ 行内布局加 flex-wrap:wrap，窄了就换行而不是硬挤
+ *   ④ 分档缩小字号与内边距，保持可读
+ * ========================================================================== */
+
+/* 中等偏窄：收紧内边距 */
+@media (max-width: 340px) {
+  .app { padding: 7px 7px 20px; gap: 7px; }
+  .card { padding: 7px; gap: 5px; }
+  .btn { padding: 6px 9px; font-size: 11px; }
+  .btn.primary { padding: 8px 9px; font-size: 12px; }
+  .title { font-size: 13.5px; }
+  .desc { font-size: 10px; }
+}
+
+/* 很窄：进一步缩字，并让按钮占满整行（竖排更好点） */
+@media (max-width: 290px) {
+  .app { padding: 6px 6px 18px; gap: 6px; }
+  .card { padding: 6px; gap: 5px; border-radius: 5px; }
+  .title { font-size: 13px; }
+  .sub { font-size: 9.5px; }
+  .desc { font-size: 9.5px; }
+  .btn { padding: 5px 8px; font-size: 10.5px; }
+  .btn.primary { padding: 7px 8px; font-size: 11.5px; }
+  .btn.mini { padding: 3px 6px; font-size: 9.5px; }
+  .input { font-size: 10.5px; padding: 4px 6px; }
+  .field label { font-size: 10.5px; }
+  .tip { font-size: 9px; }
+  .preview { font-size: 9.5px; }
+  .log { font-size: 9.5px; max-height: 170px; }
+  .status { font-size: 11px; padding: 5px 7px; }
+  .docinfo { font-size: 10px; }
+
+  /* 页脚按钮各占一行，避免"回到顶部/刷新文档状态"挤成一坨 */
+  .foot { flex-direction: column; align-items: stretch; }
+  .foot .spacer { display: none; }
+  .foot .btn { width: 100%; }
+
+  /* 标题行的小按钮也不跟标题抢位置 */
+  .card-title.row { justify-content: flex-start; }
+  .card-title.row > .spacer { display: none; }
+}
+
+/* 极窄（基本到最小宽度了）：日志时间戳换到下一行，正文独占宽度 */
+@media (max-width: 250px) {
+  .log-line { display: block; }
+  .log-time { display: inline; margin-right: 4px; }
+  .log-msg { display: inline; }
+}
